@@ -17,14 +17,27 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-# EC2 Key Pair for SSH access
+# Generate SSH key pair for Jenkins
+resource "tls_private_key" "jenkins" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create AWS key pair from generated key
 resource "aws_key_pair" "jenkins" {
   key_name   = "media-compressor-jenkins-key"
-  public_key = file("~/.ssh/id_rsa.pub")
+  public_key = tls_private_key.jenkins.public_key_openssh
 
   tags = {
     Name = "jenkins-key"
   }
+}
+
+# Save private key locally (optional - for manual SSH access)
+resource "local_file" "jenkins_private_key" {
+  content         = tls_private_key.jenkins.private_key_pem
+  filename        = "${path.module}/../.ssh/jenkins_key.pem"
+  file_permission = "0600"
 }
 
 # Security Group for Jenkins

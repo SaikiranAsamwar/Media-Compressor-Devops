@@ -115,7 +115,7 @@ output "jenkins_url" {
 
 output "jenkins_ssh_command" {
   description = "SSH command to connect to Jenkins instance"
-  value       = "ssh -i ~/.ssh/id_rsa ubuntu@${aws_eip.jenkins.public_ip}"
+  value       = "ssh -i .ssh/jenkins_key.pem ubuntu@${aws_eip.jenkins.public_ip}"
 }
 
 output "jenkins_security_group_id" {
@@ -126,4 +126,10 @@ output "jenkins_security_group_id" {
 output "jenkins_iam_role_name" {
   description = "Jenkins IAM role name"
   value       = aws_iam_role.jenkins.name
+}
+
+output "jenkins_private_key_path" {
+  description = "Path to Jenkins private key for SSH access"
+  value       = local_file.jenkins_private_key.filename
+  sensitive   = true
 }
