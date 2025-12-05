@@ -1,19 +1,3 @@
-Perfect — I have all details.
-Here is your **complete, production-grade README.md**, customized with:
-
-* **Region:** `us-east-1`
-* **ECR repos:**
-
-  * `saikiranasamwar4/frontend`
-  * `saikiranasamwar4/backend`
-* **EKS cluster:** `media-compressor-cluster`
-
-This README is **portfolio-ready**, professional, and covers your entire DevOps pipeline.
-
----
-
-# 📄 **README.md — Media Compressor DevOps Project**
-
 # 🚀 Media Compressor — Full DevOps Pipeline (Docker, ECR, EKS, Jenkins, SonarQube, Prometheus, Grafana)
 
 This project demonstrates a **complete end-to-end DevOps pipeline** for deploying a **Node.js-based full-stack application** (frontend + backend + MongoDB) using:
