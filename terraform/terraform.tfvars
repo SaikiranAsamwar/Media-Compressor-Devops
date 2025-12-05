@@ -1,7 +1,7 @@
 # Terraform Variables - Deployment Configuration
 # These values are used to customize the infrastructure deployment
 
-aws_region                 = "us-west-2"
+aws_region                 = "us-east-1"
 cluster_name               = "media-compressor-cluster"
 vpc_cidr                   = "10.0.0.0/16"
 environment                = "production"
