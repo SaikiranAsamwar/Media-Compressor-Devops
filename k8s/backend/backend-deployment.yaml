@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: media-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: 514439471441.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/backend:latest
+        ports:
+          - containerPort: 3000
+        env:
+          - name: MONGO_URL
+            value: "mongodb://mongoUser:mongoPass123@mongo.media-app.svc.cluster.local:27017/"
