@@ -76,3 +76,21 @@ variable "account_id" {
   type        = string
   default     = "514439471441"
 }
+
+variable "jenkins_port" {
+  description = "Jenkins web UI port"
+  type        = number
+  default     = 8080
+}
+
+variable "allowed_ssh_cidr" {
+  description = "CIDR block allowed for SSH access (restrict in production)"
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+variable "allowed_jenkins_cidr" {
+  description = "CIDR block allowed for Jenkins web UI"
+  type        = string
+  default     = "0.0.0.0/0"
+}

@@ -49,10 +49,10 @@ resource "aws_security_group" "jenkins" {
   # Jenkins web UI
   ingress {
     description = "Jenkins Web UI"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = var.jenkins_port
+    to_port     = var.jenkins_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.allowed_jenkins_cidr]
   }
 
   # SSH access
@@ -61,7 +61,7 @@ resource "aws_security_group" "jenkins" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.allowed_ssh_cidr]
   }
 
   # Allow all outbound traffic

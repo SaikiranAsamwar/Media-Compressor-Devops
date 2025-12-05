@@ -25,11 +25,13 @@ terraform {
     }
   }
 
-  # Uncomment and configure for remote state
+  # Uncomment and configure for remote state (recommended for team environments)
   # backend "s3" {
-  #   bucket = "your-terraform-state-bucket"
-  #   key    = "media-compressor/terraform.tfstate"
-  #   region = "us-east-1"
+  #   bucket         = "your-terraform-state-bucket"
+  #   key            = "media-compressor/terraform.tfstate"
+  #   region         = "us-west-2"
+  #   encrypt        = true
+  #   dynamodb_table = "terraform-locks"
   # }
 }
 
