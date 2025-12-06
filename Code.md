@@ -1,4 +1,4 @@
-Perfect — below is your **FINAL, FULL, PROFESSIONAL `README.md`**, containing:
+Perfect — below is your **FINAL, FULL, PROFESSIONAL `Code.md`**, containing:
 
 ✔ Full project explanation
 ✔ Professional architecture
@@ -10,12 +10,51 @@ Perfect — below is your **FINAL, FULL, PROFESSIONAL `README.md`**, containing:
 ✔ **SonarQube setup**
 ✔ **Prometheus + Grafana setup**
 ✔ Clean, structured, industry-grade formatting
+✔ **SSH connection guide**
 
-This README is **ready to paste into your GitHub repository**.
+This Code.md is **reference documentation** for all code and infrastructure components.
 
 ---
 
-# 📄 **README.md — Media Compressor DevOps Project**
+# 🖥️ **SSH Connection using PEM file in Terminal**
+
+**Prerequisites:**
+- PEM file downloaded from AWS (e.g., `key.pem`)
+- EC2 instance public IP address
+- Terminal/SSH client access
+
+**Steps:**
+
+1. **Set correct permissions on PEM file** (Required for security):
+```bash
+chmod 400 key.pem
+```
+
+2. **Connect to EC2 instance**:
+```bash
+ssh -i key.pem ec2-user@<public-ip>
+```
+
+**Replace:**
+- `key.pem` with your actual PEM file name
+- `<public-ip>` with your EC2 instance's public IP
+
+**Example:**
+```bash
+ssh -i my-key.pem ec2-user@54.123.45.67
+```
+
+**Expected output** (first time connection):
+```
+The authenticity of host '54.123.45.67' can't be established.
+ED25519 key fingerprint is SHA256:XXXXXXX...
+Are you sure you want to continue connecting (yes/no)?
+```
+Type `yes` and press Enter.
+
+---
+
+# 📄 **Code Reference Documentation — Media Compressor DevOps Project**
 
 # 🚀 Media Compressor — Full DevOps CI/CD Pipeline on AWS
 
