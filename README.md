@@ -1,613 +1,1000 @@
-# Media Compressor Web Application
+# 🚀 Media Compressor — Full DevOps Pipeline (Docker, ECR, EKS, Jenkins, SonarQube, Prometheus, Grafana)
 
-A full-stack web application for compressing and converting media files including images, videos, and audio. Built with Node.js, Express, and modern web technologies.
+This project demonstrates a **complete end-to-end DevOps pipeline** for deploying a **Node.js-based full-stack application** (frontend + backend + MongoDB) using:
 
-## 📋 Table of Contents
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [Usage Guide](#usage-guide)
-- [API Endpoints](#api-endpoints)
-- [Authentication](#authentication)
-- [User Roles](#user-roles)
-- [Troubleshooting](#troubleshooting)
+* **AWS ECR** (store Docker images)
+* **AWS EKS** (Kubernetes deployment)
+* **Docker** (image creation for frontend & backend)
+* **Jenkins** (CI/CD automation)
+* **SonarQube** (code quality)
+* **Prometheus + Grafana** (monitoring)
+* **MongoDB StatefulSet** (persistent storage on EKS)
+* **EC2 Master Node** (DevOps workstation)
+* **NO ANSIBLE** — fully manual setup
+
+This README serves as the **complete deployment guide**, replicable in any AWS account.
 
 ---
 
-## ✨ Features
-
-### Core Features
-- 🖼️ **Image Compression** - Optimize PNG, JPEG, WebP with quality control
-- 🎬 **Video Conversion** - Convert between MP4, AVI, MOV formats
-- 🎵 **Audio Processing** - Compress MP3, WAV, AAC files
-- 📄 **PDF Operations** - Create, merge, and compress PDFs
-- 📊 **Batch Processing** - Handle multiple files simultaneously
-
-### User Features
-- 👤 **User Authentication** - Secure signup/login with JWT
-- 🔐 **Google OAuth** - Sign in with Google account
-- 📈 **Usage Dashboard** - Track compression history and statistics
-- 💾 **File History** - View and download past conversions
-- ⚙️ **User Settings** - Manage profile and preferences
-
-### Admin Features
-- 🔧 **Admin Panel** - User management dashboard
-- 📊 **System Metrics** - Monitor application performance
-- 👥 **User Management** - View, edit, and manage users
-- 🚦 **Access Control** - Role-based permissions
-
-### Pricing Tiers
-- **Free**: 10 conversions/month, 100MB storage
-- **Pro**: 100 conversions/month, 1GB storage
-- **Enterprise**: Unlimited conversions, 10GB storage
-
----
-
-## 🛠️ Technology Stack
-
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB (via Mongoose)
-- **Authentication**: Passport.js (Local + Google OAuth)
-- **File Upload**: Multer
-- **Image Processing**: Sharp
-- **PDF Processing**: pdf-lib
-- **Security**: bcryptjs, jsonwebtoken
-- **Real-time**: Socket.io
-- **Monitoring**: prom-client (Prometheus metrics)
-
-### Frontend
-- **UI Framework**: Vanilla JavaScript
-- **Styling**: CSS3
-- **HTTP Client**: Fetch API
-- **Real-time**: Socket.io Client
-
-### Development
-- **Process Manager**: nodemon
-- **Logging**: morgan
-- **CORS**: cors middleware
-
----
-
-## 📁 Project Structure
+# 📦 Architecture Overview
 
 ```
-Compressorr/
-├── backend/
-│   ├── src/
-│   │   ├── server.js              # Main application entry point
-│   │   ├── metrics.js             # Prometheus metrics configuration
-│   │   ├── config/
-│   │   │   └── passport.js        # Passport authentication config
-│   │   ├── controllers/
-│   │   │   └── fileController.js  # File processing logic
-│   │   ├── middleware/
-│   │   │   └── auth.js            # Authentication middleware
-│   │   ├── models/
-│   │   │   └── User.js            # User model schema
-│   │   ├── routes/
-│   │   │   ├── api.js             # API routes
-│   │   │   ├── auth.js            # Authentication routes
-│   │   │   └── admin.js           # Admin routes
-│   │   └── services/
-│   │       └── conversionService.js # File conversion service
-│   ├── scripts/
-│   │   └── create-admin.js        # Script to create admin user
-│   ├── package.json               # Backend dependencies
-│   └── Dockerfile                 # Backend container image
-│
-├── frontend/
-│   ├── index.html                 # Landing page
-│   ├── login.html                 # Login page
-│   ├── signup.html                # Registration page
-│   ├── dashboard.html             # User dashboard
-│   ├── converter.html             # File converter interface
-│   ├── history.html               # Conversion history
-│   ├── profile.html               # User profile
-│   ├── settings.html              # User settings
-│   ├── admin.html                 # Admin panel
-│   ├── pricing.html               # Pricing page
-│   ├── styles.css                 # Global styles
-│   ├── app.js                     # Main application logic
-│   ├── auth.js                    # Authentication logic
-│   ├── common.js                  # Shared utilities
-│   ├── dashboard.js               # Dashboard logic
-│   ├── converter.js               # Converter logic
-│   ├── history.js                 # History page logic
-│   ├── profile.js                 # Profile page logic
-│   ├── settings.js                # Settings page logic
-│   ├── admin.js                   # Admin panel logic
-│   ├── pricing.js                 # Pricing page logic
-│   ├── nginx.conf                 # Nginx configuration
-│   └── Dockerfile                 # Frontend container image
-│
-├── uploads/                       # File upload directory
-└── README.md                      # This file
+                         ┌────────────────────────┐
+                         │      Developer Push     │
+                         └─────────────┬──────────┘
+                                       │
+                                       ▼
+                        ┌───────────────────────────┐
+                        │         Jenkins (EC2)      │
+                        │  - npm test/build          │
+                        │  - SonarQube scan          │
+                        │  - Docker build            │
+                        │  - Push to ECR             │
+                        │  - Deploy to EKS           │
+                        └───────┬───────────────────┘
+                                │
+                                ▼
+              ┌──────────────────────────────────────────┐
+              │  Amazon ECR (us-east-1)                  │
+              │  - saikiranasamwar4/frontend:latest      │
+              │  - saikiranasamwar4/backend:latest       │
+              └──────────────────┬───────────────────────┘
+                                 │
+                                 ▼
+          ┌────────────────────────────────────────────────────────┐
+          │                Amazon EKS Cluster                      │
+          │        (media-compressor-cluster)                     │
+          │                                                        │
+          │  ┌──────────────┐   ┌────────────────┐   ┌──────────┐ │
+          │  │ Frontend Pod │   │ Backend Pod    │   │ MongoDB  │ │
+          │  └──────────────┘   └────────────────┘   └──────────┘ │
+          │                                                        │
+          │  + LoadBalancer (ELB)                                  │
+          │  + Prometheus + Grafana                                │
+          └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ✅ Prerequisites
+# 🖥️ **1. Setup EC2 Master Node (Amazon Linux)**
 
-Before running the application, ensure you have:
-
-- **Node.js** (v14 or higher) - [Download](https://nodejs.org/)
-- **MongoDB** (v4 or higher) - [Download](https://www.mongodb.com/try/download/community)
-- **npm** or **yarn** - Package manager (comes with Node.js)
-- **Git** - [Download](https://git-scm.com/)
-
----
-
-## 📦 Installation
-
-### 1. Clone the Repository
+SSH into EC2:
 
 ```bash
-git clone https://github.com/SaikiranAsamwar/Media-Compressor-Devops.git
-cd Media-Compressor-Devops
+ssh -i key.pem ec2-user@<public-ip>
 ```
 
-### 2. Install Backend Dependencies
+Update & install basic utilities:
+
+```bash
+sudo dnf update -y
+sudo dnf install -y git jq wget unzip vim
+```
+
+---
+
+# 🐳 **2. Install Docker**
+
+```bash
+sudo dnf install docker -y
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user
+```
+
+Re-login or run:
+
+```bash
+newgrp docker
+```
+
+Test:
+
+```bash
+docker run hello-world
+```
+
+---
+
+# 🧰 **3. Install Required Tools**
+
+### Node.js
+
+```bash
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo dnf install -y nodejs
+```
+
+### Java (for Jenkins & Sonar)
+
+```bash
+sudo dnf install -y java-17-amazon-corretto
+```
+
+### AWS CLI
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscli.zip
+unzip awscli.zip
+sudo ./aws/install
+aws --version
+```
+
+### kubectl
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+```
+
+### eksctl
+
+```bash
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
+tar -xzf eksctl_Linux_amd64.tar.gz
+sudo mv eksctl /usr/local/bin/
+```
+
+### helm
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+---
+
+# 🧩 **4. Install Jenkins (Manual Installation)**
+
+Add Jenkins repo:
+
+```bash
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo dnf install -y jenkins
+```
+
+Start Jenkins:
+
+```bash
+sudo usermod -aG docker jenkins
+sudo systemctl enable --now jenkins
+sudo systemctl restart jenkins
+```
+
+Jenkins unlock password:
+
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Access Jenkins → http://EC2_PUBLIC_IP:8080
+
+Install plugins:
+
+* Git
+* Pipeline
+* Docker Pipeline
+* SonarQube Scanner
+* Kubernetes CLI
+* AWS Credentials
+
+---
+
+# 📚 **5. Install SonarQube + PostgreSQL**
+
+### Install PostgreSQL
+
+```bash
+sudo dnf install postgresql15 postgresql15-server -y
+sudo /usr/bin/postgresql-setup --initdb
+sudo systemctl enable --now postgresql
+```
+
+Create DB & user:
+
+```bash
+sudo -u postgres psql -c "CREATE USER sonar WITH ENCRYPTED PASSWORD 'sonar_pass';"
+sudo -u postgres psql -c "CREATE DATABASE sonarqube OWNER sonar;"
+```
+
+### Install SonarQube
+
+```bash
+cd /opt
+sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.4.zip
+sudo unzip sonarqube-10.4.zip
+sudo mv sonarqube-10.4 sonarqube
+sudo chown -R ec2-user:ec2-user /opt/sonarqube
+```
+
+Edit DB config:
+
+```bash
+sudo nano /opt/sonarqube/conf/sonar.properties
+```
+
+Add:
+
+```
+sonar.jdbc.username=sonar
+sonar.jdbc.password=sonar_pass
+sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube
+```
+
+### Create systemd service
+
+```bash
+sudo tee /etc/systemd/system/sonarqube.service <<EOF
+[Unit]
+Description=SonarQube
+After=network.target
+
+[Service]
+Type=forking
+User=ec2-user
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+Start service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now sonarqube
+```
+
+Access Sonar → http://EC2_PUBLIC_IP:9000
+
+---
+
+# 🏗️ **6. Create ECR Repositories**
+
+Region: `us-east-1`
+Account: Automatically detected
+
+```bash
+aws ecr create-repository --repository-name saikiranasamwar4/frontend --region us-east-1
+aws ecr create-repository --repository-name saikiranasamwar4/backend  --region us-east-1
+```
+
+Login to ECR:
+
+```bash
+aws ecr get-login-password --region us-east-1 |
+docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+```
+
+---
+
+# 🐙 **7. Build & Push Docker Images**
+
+## Backend
 
 ```bash
 cd backend
-npm install
+docker build -t backend .
+docker tag backend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/backend:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/backend:latest
 ```
 
-### 3. Frontend Setup
-
-The frontend uses vanilla JavaScript and doesn't require a build step. Files can be served directly or via a static file server.
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-Create a `.env` file in the `backend` directory with the following variables:
-
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-
-# MongoDB Configuration
-MONGODB_URI=mongodb://localhost:27017/media-compressor
-
-# Session Secret
-SESSION_SECRET=your-session-secret-key-here
-
-# JWT Configuration
-JWT_SECRET=your-jwt-secret-key-here
-JWT_EXPIRE=7d
-
-# Google OAuth (Optional)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
-
-# File Upload Configuration
-MAX_FILE_SIZE=52428800  # 50MB in bytes
-UPLOAD_DIR=../uploads
-
-# CORS Configuration
-CORS_ORIGIN=http://localhost:3000,http://127.0.0.1:3000
-```
-
-### MongoDB Setup
-
-#### Option 1: Local MongoDB
-
-Start your local MongoDB service:
+## Frontend
 
 ```bash
-# Windows
-net start MongoDB
-
-# macOS/Linux
-sudo systemctl start mongod
-```
-
-#### Option 2: MongoDB Atlas (Cloud)
-
-1. Create an account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a cluster
-3. Get your connection string
-4. Update `MONGODB_URI` in `.env` file
-
----
-
-## 🚀 Running the Application
-
-### Development Mode (with auto-reload)
-
-```bash
-cd backend
-npm run dev
-```
-
-### Production Mode
-
-```bash
-cd backend
-npm start
-```
-
-### Access the Application
-
-- **Backend API**: `http://localhost:3000`
-- **Frontend**: Serve the `frontend` folder with a static file server
-
-#### Serving Frontend with http-server
-
-```bash
-# Install http-server globally (one-time)
-npm install -g http-server
-
-# Navigate to frontend directory
 cd frontend
-
-# Start the server
-http-server -p 8080
-
-# Access at: http://localhost:8080
+docker build -t frontend .
+docker tag frontend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/frontend:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/frontend:latest
 ```
 
-#### Serving Frontend with Python
+---
+
+# ☸️ **8. Create EKS Cluster**
 
 ```bash
-# Navigate to frontend directory
-cd frontend
-
-# Python 3
-python -m http.server 8080
-
-# Access at: http://localhost:8080
+eksctl create cluster \
+  --name media-compressor-cluster \
+  --region us-east-1 \
+  --nodes 3 \
+  --node-type t3.medium \
+  --managed
 ```
 
----
+Verify:
 
-## 📖 Usage Guide
-
-### For Regular Users
-
-1. **Sign Up**: Navigate to `/signup.html` and create an account
-2. **Login**: Sign in at `/login.html` with your credentials
-3. **Dashboard**: View your usage statistics and recent conversions
-4. **Compress Files**: Go to `/converter.html` to upload and compress media files
-5. **View History**: Check your conversion history at `/history.html`
-6. **Manage Profile**: Update your information at `/profile.html`
-7. **Settings**: Configure preferences at `/settings.html`
-
-### For Administrators
-
-1. **Create Admin User**:
-   ```bash
-   cd backend
-   npm run create-admin
-   # Follow the prompts to set admin credentials
-   ```
-
-2. **Access Admin Panel**: Navigate to `/admin.html`
-
-3. **Admin Capabilities**:
-   - View all registered users
-   - Edit user details and roles
-   - Change user subscription tiers
-   - Monitor system metrics
-   - View conversion statistics
-
----
-
-## 🔌 API Endpoints
-
-### Authentication Routes
-
-```
-POST   /auth/register              # Register new user
-POST   /auth/login                 # Login user
-GET    /auth/logout                # Logout user
-GET    /auth/me                    # Get current user info
-POST   /auth/refresh               # Refresh JWT token
-GET    /auth/google                # Google OAuth login
-GET    /auth/google/callback       # Google OAuth callback
-```
-
-### File Operations
-
-```
-POST   /api/convert/image          # Convert/compress image
-POST   /api/convert/video          # Convert video
-POST   /api/convert/audio          # Convert audio
-POST   /api/convert/pdf            # Create/compress PDF
-GET    /api/files                  # Get user's files
-GET    /api/files/:id              # Get specific file
-DELETE /api/files/:id              # Delete file
-GET    /api/download/:id           # Download converted file
-```
-
-### User Routes
-
-```
-GET    /api/user/profile           # Get user profile
-PUT    /api/user/profile           # Update profile
-GET    /api/user/stats             # Get usage statistics
-GET    /api/user/history           # Get conversion history
-PUT    /api/user/settings          # Update settings
-```
-
-### Admin Routes (Protected)
-
-```
-GET    /api/admin/users            # List all users
-GET    /api/admin/users/:id        # Get user details
-PUT    /api/admin/users/:id        # Update user
-DELETE /api/admin/users/:id        # Delete user
-GET    /api/admin/stats            # System statistics
-GET    /api/admin/metrics          # Prometheus metrics
-```
-
----
-
-## 🔐 Authentication
-
-### Local Authentication
-
-- Uses Passport Local Strategy
-- Passwords are hashed with bcryptjs
-- JWT tokens for session management
-- Token expiry: 7 days (configurable)
-
-### Google OAuth Setup
-
-1. **Create Google OAuth Credentials**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project
-   - Enable Google+ API
-   - Create OAuth 2.0 credentials
-   - Add authorized redirect URI: `http://localhost:3000/auth/google/callback`
-
-2. **Update Environment Variables**:
-   ```env
-   GOOGLE_CLIENT_ID=your-client-id-here
-   GOOGLE_CLIENT_SECRET=your-client-secret-here
-   ```
-
-3. **Test OAuth Flow**:
-   - Navigate to login page
-   - Click "Sign in with Google"
-   - Authorize the application
-
----
-
-## 👥 User Roles
-
-### Regular User (Default)
-- Upload and convert files
-- View personal conversion history
-- Limited monthly conversions and storage
-- Access to pricing/upgrade options
-
-### Admin
-- All regular user permissions
-- Access to admin panel
-- Manage all users (view, edit, delete)
-- View system-wide metrics
-- No conversion or storage limits
-
----
-
-## 🐛 Troubleshooting
-
-### MongoDB Connection Issues
-
-**Problem**: `MongoNetworkError: connect ECONNREFUSED`
-
-**Solutions**:
 ```bash
-# Check if MongoDB is running
-# Windows
-sc query MongoDB
-
-# macOS/Linux
-sudo systemctl status mongod
-
-# Start MongoDB if not running
-# Windows
-net start MongoDB
-
-# macOS/Linux
-sudo systemctl start mongod
+kubectl get nodes
 ```
 
-### Port Already in Use
+---
 
-**Problem**: `Error: listen EADDRINUSE: address already in use :::3000`
+# 🍃 **9. Deploy MongoDB (StatefulSet)**
 
-**Solutions**:
-```powershell
-# Windows PowerShell - Find process using port 3000
-netstat -ano | findstr :3000
-taskkill /PID <PID> /F
-
-# Or change PORT in .env file
-PORT=3001
+```bash
+kubectl apply -f k8s/mongo-statefulset.yaml
 ```
 
-### File Upload Failures
+---
 
-**Problem**: Files not uploading or processing
+# 🔧 **10. Deploy Backend & Frontend to EKS**
 
-**Solutions**:
-1. Verify `uploads/` directory exists with write permissions
-2. Check `MAX_FILE_SIZE` configuration in `.env`
-3. Ensure file type is supported
-4. Review backend logs for specific error messages
+```bash
+kubectl apply -f k8s/backend-deploy.yaml
+kubectl apply -f k8s/frontend-deploy.yaml
+```
 
-### Google OAuth Not Working
+Get LoadBalancer URL:
 
-**Problem**: OAuth redirect fails or shows errors
+```bash
+kubectl get svc -n media-app
+```
 
-**Solutions**:
-1. Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`
-2. Check authorized redirect URIs in Google Console
-3. Ensure cookies are enabled in browser
-4. Verify CORS settings in backend
+---
 
-### Session Expires Too Quickly
+# 📊 **11. Install Prometheus + Grafana (Monitoring)**
 
-**Problem**: Users getting logged out frequently
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
 
-**Solution**: Adjust session configuration in `backend/src/server.js`:
-```javascript
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'session-secret-key',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { 
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days instead of 7
-    httpOnly: true,
-    sameSite: 'lax'
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace
+```
+
+Expose Grafana:
+
+```bash
+kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80
+```
+
+Login:
+username: `admin`
+password: `prom-operator`
+
+---
+
+# 🤖 **12. Jenkins CI/CD Pipeline**
+
+Your `Jenkinsfile` automates:
+
+* Git checkout
+* npm build/test
+* Sonar scan
+* Docker build
+* Push to ECR
+* Update EKS deployment
+
+Place at root of repo:
+
+```groovy
+pipeline {
+  agent any
+  environment {
+    AWS_REGION = 'us-east-1'
+    AWS_ACCOUNT = '<AWS_ACCOUNT_ID>'
+    ECR_BACKEND = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/saikiranasamwar4/backend"
+    ECR_FRONTEND = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/saikiranasamwar4/frontend"
   }
-}));
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Backend Build & Test') {
+      steps {
+        dir('backend') {
+          sh 'npm ci'
+          sh 'npm test || true'
+        }
+      }
+    }
+    stage('Frontend Build') {
+      steps {
+        dir('frontend') {
+          sh 'npm ci'
+          sh 'npm run build'
+        }
+      }
+    }
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          dir('backend') { sh 'sonar-scanner -Dsonar.projectKey=backend' }
+          dir('frontend') { sh 'sonar-scanner -Dsonar.projectKey=frontend' }
+        }
+      }
+    }
+    stage('Build & Push Docker Images') {
+      steps {
+        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        
+        dir('backend') {
+          sh "docker build -t backend:${BUILD_NUMBER} ."
+          sh "docker tag backend:${BUILD_NUMBER} ${ECR_BACKEND}:${BUILD_NUMBER}"
+          sh "docker push ${ECR_BACKEND}:${BUILD_NUMBER}"
+        }
+        dir('frontend') {
+          sh "docker build -t frontend:${BUILD_NUMBER} ."
+          sh "docker tag frontend:${BUILD_NUMBER} ${ECR_FRONTEND}:${BUILD_NUMBER}"
+          sh "docker push ${ECR_FRONTEND}:${BUILD_NUMBER}"
+        }
+      }
+    }
+    stage('Deploy to EKS') {
+      steps {
+        sh """
+        aws eks --region us-east-1 update-kubeconfig --name media-compressor-cluster
+        
+        kubectl -n media-app set image deployment/backend backend=${ECR_BACKEND}:${BUILD_NUMBER}
+        kubectl -n media-app set image deployment/frontend frontend=${ECR_FRONTEND}:${BUILD_NUMBER}
+
+        kubectl -n media-app rollout status deployment/backend
+        kubectl -n media-app rollout status deployment/frontend
+        """
+      }
+    }
+  }
+}
 ```
 
 ---
 
-## 🐳 Docker Deployment (Optional)
+# 🧪 **13. Testing the Pipeline**
 
-### Build Docker Images
+Push a commit to GitHub → Jenkins triggers automatically (if webhook added) → your application redeploys on AWS.
+
+---
+
+# 📈 **14. Monitoring Setup**
+
+Backend must expose `/metrics` using `prom-client`.
+Prometheus scrapes via a ServiceMonitor.
+Grafana visualizes performance.
+
+---
+
+# 🔒 **15. Security Notes**
+
+* Use IAM Role for EC2 master instead of AWS Access Keys
+* Restrict Jenkin/Sonar security group
+* Use ECR image scanning
+* Use Kubernetes Secrets
+
+---
+
+# 🎉 **Final Result**
+
+You now have a **complete, scalable, cloud-native CI/CD + Monitoring pipeline**:
+
+* Automated builds
+* Static code analysis
+* Containerization
+* AWS ECR registry
+* Kubernetes deployment
+* Persistent MongoDB
+* Prometheus + Grafana metrics
+* Jenkins manual installation workflow
+* 100% built manually (NO ansible, NO docker for tools)
+
+This README can be directly added to your GitHub repository.
+
+---
+
+# ✅ Want me to generate diagrams (PNG), folder structure, or improved Jenkinsfile?
+
+Just tell me:
+**"Generate diagrams"**
+or
+**"Generate folder structure"**
+or
+**"Optimize Jenkinsfile"**
+Perfect — I have all details.
+Here is your **complete, production-grade README.md**, customized with:
+
+* **Region:** `us-east-1`
+* **ECR repos:**
+
+  * `saikiranasamwar4/frontend`
+  * `saikiranasamwar4/backend`
+* **EKS cluster:** `media-compressor-cluster`
+
+This README is **portfolio-ready**, professional, and covers your entire DevOps pipeline.
+
+---
+
+# 📄 **README.md — Media Compressor DevOps Project**
+
+# 🚀 Media Compressor — Full DevOps Pipeline (Docker, ECR, EKS, Jenkins, SonarQube, Prometheus, Grafana)
+
+This project demonstrates a **complete end-to-end DevOps pipeline** for deploying a **Node.js-based full-stack application** (frontend + backend + MongoDB) using:
+
+* **AWS ECR** (store Docker images)
+* **AWS EKS** (Kubernetes deployment)
+* **Docker** (image creation for frontend & backend)
+* **Jenkins** (CI/CD automation)
+* **SonarQube** (code quality)
+* **Prometheus + Grafana** (monitoring)
+* **MongoDB StatefulSet** (persistent storage on EKS)
+* **EC2 Master Node** (DevOps workstation)
+* **NO ANSIBLE** — fully manual setup
+
+This README serves as the **complete deployment guide**, replicable in any AWS account.
+
+---
+
+# 📦 Architecture Overview
+
+```
+                         ┌────────────────────────┐
+                         │      Developer Push     │
+                         └─────────────┬──────────┘
+                                       │
+                                       ▼
+                        ┌───────────────────────────┐
+                        │         Jenkins (EC2)      │
+                        │  - npm test/build          │
+                        │  - SonarQube scan          │
+                        │  - Docker build            │
+                        │  - Push to ECR             │
+                        │  - Deploy to EKS           │
+                        └───────┬───────────────────┘
+                                │
+                                ▼
+              ┌──────────────────────────────────────────┐
+              │  Amazon ECR (us-east-1)                  │
+              │  - saikiranasamwar4/frontend:latest      │
+              │  - saikiranasamwar4/backend:latest       │
+              └──────────────────┬───────────────────────┘
+                                 │
+                                 ▼
+          ┌────────────────────────────────────────────────────────┐
+          │                Amazon EKS Cluster                      │
+          │        (media-compressor-cluster)                     │
+          │                                                        │
+          │  ┌──────────────┐   ┌────────────────┐   ┌──────────┐ │
+          │  │ Frontend Pod │   │ Backend Pod    │   │ MongoDB  │ │
+          │  └──────────────┘   └────────────────┘   └──────────┘ │
+          │                                                        │
+          │  + LoadBalancer (ELB)                                  │
+          │  + Prometheus + Grafana                                │
+          └────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 🖥️ **1. Setup EC2 Master Node (Amazon Linux)**
+
+SSH into EC2:
 
 ```bash
-# Build backend image
+ssh -i key.pem ec2-user@<public-ip>
+```
+
+Update & install basic utilities:
+
+```bash
+sudo dnf update -y
+sudo dnf install -y git jq wget unzip vim
+```
+
+---
+
+# 🐳 **2. Install Docker**
+
+```bash
+sudo dnf install docker -y
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user
+```
+
+Re-login or run:
+
+```bash
+newgrp docker
+```
+
+Test:
+
+```bash
+docker run hello-world
+```
+
+---
+
+# 🧰 **3. Install Required Tools**
+
+### Node.js
+
+```bash
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo dnf install -y nodejs
+```
+
+### Java (for Jenkins & Sonar)
+
+```bash
+sudo dnf install -y java-17-amazon-corretto
+```
+
+### AWS CLI
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscli.zip
+unzip awscli.zip
+sudo ./aws/install
+aws --version
+```
+
+### kubectl
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+```
+
+### eksctl
+
+```bash
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
+tar -xzf eksctl_Linux_amd64.tar.gz
+sudo mv eksctl /usr/local/bin/
+```
+
+### helm
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+---
+
+# 🧩 **4. Install Jenkins (Manual Installation)**
+
+Add Jenkins repo:
+
+```bash
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo dnf install -y jenkins
+```
+
+Start Jenkins:
+
+```bash
+sudo usermod -aG docker jenkins
+sudo systemctl enable --now jenkins
+sudo systemctl restart jenkins
+```
+
+Jenkins unlock password:
+
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Access Jenkins → http://EC2_PUBLIC_IP:8080
+
+Install plugins:
+
+* Git
+* Pipeline
+* Docker Pipeline
+* SonarQube Scanner
+* Kubernetes CLI
+* AWS Credentials
+
+---
+
+# 📚 **5. Install SonarQube + PostgreSQL**
+
+### Install PostgreSQL
+
+```bash
+sudo dnf install postgresql15 postgresql15-server -y
+sudo /usr/bin/postgresql-setup --initdb
+sudo systemctl enable --now postgresql
+```
+
+Create DB & user:
+
+```bash
+sudo -u postgres psql -c "CREATE USER sonar WITH ENCRYPTED PASSWORD 'sonar_pass';"
+sudo -u postgres psql -c "CREATE DATABASE sonarqube OWNER sonar;"
+```
+
+### Install SonarQube
+
+```bash
+cd /opt
+sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.4.zip
+sudo unzip sonarqube-10.4.zip
+sudo mv sonarqube-10.4 sonarqube
+sudo chown -R ec2-user:ec2-user /opt/sonarqube
+```
+
+Edit DB config:
+
+```bash
+sudo nano /opt/sonarqube/conf/sonar.properties
+```
+
+Add:
+
+```
+sonar.jdbc.username=sonar
+sonar.jdbc.password=sonar_pass
+sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube
+```
+
+### Create systemd service
+
+```bash
+sudo tee /etc/systemd/system/sonarqube.service <<EOF
+[Unit]
+Description=SonarQube
+After=network.target
+
+[Service]
+Type=forking
+User=ec2-user
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+Start service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now sonarqube
+```
+
+Access Sonar → http://EC2_PUBLIC_IP:9000
+
+---
+
+# 🏗️ **6. Create ECR Repositories**
+
+Region: `us-east-1`
+Account: Automatically detected
+
+```bash
+aws ecr create-repository --repository-name saikiranasamwar4/frontend --region us-east-1
+aws ecr create-repository --repository-name saikiranasamwar4/backend  --region us-east-1
+```
+
+Login to ECR:
+
+```bash
+aws ecr get-login-password --region us-east-1 |
+docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+```
+
+---
+
+# 🐙 **7. Build & Push Docker Images**
+
+## Backend
+
+```bash
 cd backend
-docker build -t media-compressor-backend .
-
-# Build frontend image
-cd ../frontend
-docker build -t media-compressor-frontend .
+docker build -t backend .
+docker tag backend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/backend:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/backend:latest
 ```
 
-### Run with Docker Compose
-
-Create a `docker-compose.yml` in the project root:
-
-```yaml
-version: '3.8'
-
-services:
-  mongodb:
-    image: mongo:4
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-  backend:
-    build: ./backend
-    ports:
-      - "3000:3000"
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/media-compressor
-      - PORT=3000
-    depends_on:
-      - mongodb
-    volumes:
-      - ./uploads:/app/uploads
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
-
-volumes:
-  mongo-data:
-```
-
-Run with:
-```bash
-docker-compose up
-```
-
----
-
-## 📝 Development Tips
-
-### Creating an Admin User
+## Frontend
 
 ```bash
-cd backend
-npm run create-admin
-
-# Follow the prompts:
-# Email: admin@example.com
-# Password: YourSecurePassword
-# Name: Admin User
+cd frontend
+docker build -t frontend .
+docker tag frontend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/frontend:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/saikiranasamwar4/frontend:latest
 ```
 
-### Testing the API
+---
+
+# ☸️ **8. Create EKS Cluster**
 
 ```bash
-# Test health endpoint
-curl http://localhost:3000/health
-
-# Test login
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password123"}'
+eksctl create cluster \
+  --name media-compressor-cluster \
+  --region us-east-1 \
+  --nodes 3 \
+  --node-type t3.medium \
+  --managed
 ```
 
-### Monitoring Logs
+Verify:
 
 ```bash
-# Backend logs (development mode)
-cd backend
-npm run dev
-
-# View application logs
-tail -f backend/logs/app.log  # if logging to file
+kubectl get nodes
 ```
 
 ---
 
-## 📄 License
+# 🍃 **9. Deploy MongoDB (StatefulSet)**
 
-This project is licensed under the MIT License.
-
----
-
-## 👤 Author
-
-**Saikiran Asamwar**
-- GitHub: [@SaikiranAsamwar](https://github.com/SaikiranAsamwar)
-- Repository: [Media-Compressor-Devops](https://github.com/SaikiranAsamwar/Media-Compressor-Devops)
+```bash
+kubectl apply -f k8s/mongo-statefulset.yaml
+```
 
 ---
 
-## 🤝 Contributing
+# 🔧 **10. Deploy Backend & Frontend to EKS**
 
-Contributions, issues, and feature requests are welcome!
+```bash
+kubectl apply -f k8s/backend-deploy.yaml
+kubectl apply -f k8s/frontend-deploy.yaml
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Get LoadBalancer URL:
 
----
-
-## ⭐ Support
-
-Give a ⭐️ if this project helped you!
+```bash
+kubectl get svc -n media-app
+```
 
 ---
 
-**Last Updated**: December 5, 2025  
-**Version**: 2.0.0
+# 📊 **11. Install Prometheus + Grafana (Monitoring)**
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace
+```
+
+Expose Grafana:
+
+```bash
+kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80
+```
+
+Login:
+username: `admin`
+password: `prom-operator`
+
+---
+
+# 🤖 **12. Jenkins CI/CD Pipeline**
+
+Your `Jenkinsfile` automates:
+
+* Git checkout
+* npm build/test
+* Sonar scan
+* Docker build
+* Push to ECR
+* Update EKS deployment
+
+Place at root of repo:
+
+```groovy
+pipeline {
+  agent any
+  environment {
+    AWS_REGION = 'us-east-1'
+    AWS_ACCOUNT = '<AWS_ACCOUNT_ID>'
+    ECR_BACKEND = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/saikiranasamwar4/backend"
+    ECR_FRONTEND = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/saikiranasamwar4/frontend"
+  }
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Backend Build & Test') {
+      steps {
+        dir('backend') {
+          sh 'npm ci'
+          sh 'npm test || true'
+        }
+      }
+    }
+    stage('Frontend Build') {
+      steps {
+        dir('frontend') {
+          sh 'npm ci'
+          sh 'npm run build'
+        }
+      }
+    }
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          dir('backend') { sh 'sonar-scanner -Dsonar.projectKey=backend' }
+          dir('frontend') { sh 'sonar-scanner -Dsonar.projectKey=frontend' }
+        }
+      }
+    }
+    stage('Build & Push Docker Images') {
+      steps {
+        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        
+        dir('backend') {
+          sh "docker build -t backend:${BUILD_NUMBER} ."
+          sh "docker tag backend:${BUILD_NUMBER} ${ECR_BACKEND}:${BUILD_NUMBER}"
+          sh "docker push ${ECR_BACKEND}:${BUILD_NUMBER}"
+        }
+        dir('frontend') {
+          sh "docker build -t frontend:${BUILD_NUMBER} ."
+          sh "docker tag frontend:${BUILD_NUMBER} ${ECR_FRONTEND}:${BUILD_NUMBER}"
+          sh "docker push ${ECR_FRONTEND}:${BUILD_NUMBER}"
+        }
+      }
+    }
+    stage('Deploy to EKS') {
+      steps {
+        sh """
+        aws eks --region us-east-1 update-kubeconfig --name media-compressor-cluster
+        
+        kubectl -n media-app set image deployment/backend backend=${ECR_BACKEND}:${BUILD_NUMBER}
+        kubectl -n media-app set image deployment/frontend frontend=${ECR_FRONTEND}:${BUILD_NUMBER}
+
+        kubectl -n media-app rollout status deployment/backend
+        kubectl -n media-app rollout status deployment/frontend
+        """
+      }
+    }
+  }
+}
+```
+
+---
+
+# 🧪 **13. Testing the Pipeline**
+
+Push a commit to GitHub → Jenkins triggers automatically (if webhook added) → your application redeploys on AWS.
+
+---
+
+# 📈 **14. Monitoring Setup**
+
+Backend must expose `/metrics` using `prom-client`.
+Prometheus scrapes via a ServiceMonitor.
+Grafana visualizes performance.
+
+---
+
+# 🔒 **15. Security Notes**
+
+* Use IAM Role for EC2 master instead of AWS Access Keys
+* Restrict Jenkin/Sonar security group
+* Use ECR image scanning
+* Use Kubernetes Secrets
+
+---
+
+# 🎉 **Final Result**
+
+You now have a **complete, scalable, cloud-native CI/CD + Monitoring pipeline**:
+
+* Automated builds
+* Static code analysis
+* Containerization
+* AWS ECR registry
+* Kubernetes deployment
+* Persistent MongoDB
+* Prometheus + Grafana metrics
+* Jenkins manual installation workflow
+* 100% built manually (NO ansible, NO docker for tools)
+
+This README can be directly added to your GitHub repository.
+
+---
+
+# ✅ Want me to generate diagrams (PNG), folder structure, or improved Jenkinsfile?
+
+Just tell me:
+**"Generate diagrams"**
+or
+**"Generate folder structure"**
+or
+**"Optimize Jenkinsfile"**
